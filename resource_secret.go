@@ -155,8 +155,8 @@ func createSecret(data *schema.ResourceData) (secret *drone.Secret) {
 	secret = &drone.Secret{
 		Name:   data.Get("name").(string),
 		Value:  data.Get("value").(string),
-		Images: toStringList(data.Get("images").(*schema.Set)),
-		Events: toStringList(data.Get("events").(*schema.Set)),
+		Images: data.Get("images").([]string),
+		Events: data.Get("events").([]string),
 	}
 
 	if len(secret.Events) == 0 {

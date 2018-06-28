@@ -8,7 +8,12 @@ import (
 	"regexp"
 )
 
-var validRepoHooks = []string{"push", "pull", "deploy", "tag"}
+var validRepoHooks = []string{
+	drone.EventPull,
+	drone.EventPush,
+	drone.EventTag,
+	drone.EventDeploy,
+}
 
 func resourceRepo() *schema.Resource {
 	return &schema.Resource{
@@ -144,10 +149,10 @@ func createRepo(data *schema.ResourceData) (repository *drone.RepoPatch) {
 	gated := data.Get("gated").(bool)
 	timeout := int64(data.Get("timeout").(int))
 	visibility := data.Get("visibility").(string)
-	pull := hooks.Contains("pull")
-	push := hooks.Contains("push")
-	deploy := hooks.Contains("deploy")
-	tag := hooks.Contains("tag")
+	pull := hooks.Contains(drone.EventPull)
+	push := hooks.Contains(drone.EventPush)
+	deploy := hooks.Contains(drone.EventDeploy)
+	tag := hooks.Contains(drone.EventTag)
 
 	repository = &drone.RepoPatch{
 		IsTrusted:   &trusted,
@@ -173,19 +178,19 @@ func readRepo(data *schema.ResourceData, repository *drone.Repo, err error) erro
 	hooks := make([]string, 0)
 
 	if repository.AllowPull == true {
-		hooks = append(hooks, "pull")
+		hooks = append(hooks, drone.EventPull)
 	}
 
 	if repository.AllowPush == true {
-		hooks = append(hooks, "push")
+		hooks = append(hooks, drone.EventPush)
 	}
 
 	if repository.AllowDeploy == true {
-		hooks = append(hooks, "deploy")
+		hooks = append(hooks, drone.EventDeploy)
 	}
 
 	if repository.AllowTag == true {
-		hooks = append(hooks, "tag")
+		hooks = append(hooks, drone.EventTag)
 	}
 
 	data.Set("trusted", repository.IsTrusted)
