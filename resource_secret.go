@@ -152,11 +152,23 @@ func resourceSecretExists(data *schema.ResourceData, meta interface{}) (bool, er
 }
 
 func createSecret(data *schema.ResourceData) (secret *drone.Secret) {
+	events := []string{}
+	eventSet := data.Get("events").(*schema.Set)
+	for _, v := range eventSet.List() {
+		events = append(events, v.(string))
+	}
+
+	images := []string{}
+	imageSet := data.Get("images").(*schema.Set)
+	for _, v := range imageSet.List() {
+		images = append(images, v.(string))
+	}
+
 	secret = &drone.Secret{
 		Name:   data.Get("name").(string),
 		Value:  data.Get("value").(string),
-		Images: data.Get("images").([]string),
-		Events: data.Get("events").([]string),
+		Images: images,
+		Events: events,
 	}
 
 	if len(secret.Events) == 0 {

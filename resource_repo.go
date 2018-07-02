@@ -42,6 +42,7 @@ func resourceRepo() *schema.Resource {
 			"visibility": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Default:  "private",
 			},
 			"hooks": {
 				Type:     schema.TypeSet,

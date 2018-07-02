@@ -87,7 +87,7 @@ resource "drone_repo" "hello_world" {
 * `trusted` - (Optional) Repository is trusted (default: `false`).
 * `gated` - (Optional) Repository is gated (default: `false`).
 * `timeout` - (Optional) Repository timeout (default: `0`).
-* `visibility` - (Optional) Repository visibility.
+* `visibility` - (Optional) Repository visibility (default: `private`).
 * `hooks` - (Optional) List of hooks this repository should setup is limited to, 
   values must be `push`, `pull_request`, `tag`, and/or `deployment`.
 
