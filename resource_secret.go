@@ -63,6 +63,10 @@ func resourceSecret() *schema.Resource {
 			},
 		},
 
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+
 		Create: resourceSecretCreate,
 		Read:   resourceSecretRead,
 		Update: resourceSecretUpdate,
@@ -90,9 +94,7 @@ func resourceSecretCreate(data *schema.ResourceData, meta interface{}) error {
 func resourceSecretRead(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	name := data.Get("name").(string)
-
-	owner, repo, err := parseRepo(data.Get("repository").(string))
+	owner, repo, name, err := parseId(data.Id(), "secret_password")
 
 	if err != nil {
 		return err
@@ -122,9 +124,7 @@ func resourceSecretUpdate(data *schema.ResourceData, meta interface{}) error {
 func resourceSecretDelete(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	name := data.Get("name").(string)
-
-	owner, repo, err := parseRepo(data.Get("repository").(string))
+	owner, repo, name, err := parseId(data.Id(), "secret_password")
 
 	if err != nil {
 		return err
@@ -136,9 +136,7 @@ func resourceSecretDelete(data *schema.ResourceData, meta interface{}) error {
 func resourceSecretExists(data *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(drone.Client)
 
-	name := data.Get("name").(string)
-
-	owner, repo, err := parseRepo(data.Get("repository").(string))
+	owner, repo, name, err := parseId(data.Id(), "secret_password")
 
 	if err != nil {
 		return false, err
@@ -185,6 +183,7 @@ func readSecret(data *schema.ResourceData, owner, repo string, secret *drone.Sec
 
 	data.SetId(fmt.Sprintf("%s/%s/%s", owner, repo, secret.Name))
 
+	data.Set("repository", fmt.Sprintf("%s/%s", owner, repo))
 	data.Set("name", secret.Name)
 	data.Set("images", secret.Images)
 	data.Set("events", secret.Events)

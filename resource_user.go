@@ -21,6 +21,10 @@ func resourceUser() *schema.Resource {
 			},
 		},
 
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+
 		Create: resourceUserCreate,
 		Read:   resourceUserRead,
 		Delete: resourceUserDelete,
@@ -39,9 +43,7 @@ func resourceUserCreate(data *schema.ResourceData, meta interface{}) error {
 func resourceUserRead(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	login := data.Get("login").(string)
-
-	user, err := client.User(login)
+	user, err := client.User(data.Id())
 
 	return readUser(data, user, err)
 }
@@ -49,15 +51,13 @@ func resourceUserRead(data *schema.ResourceData, meta interface{}) error {
 func resourceUserDelete(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	login := data.Get("login").(string)
-
-	return client.UserDel(login)
+	return client.UserDel(data.Id())
 }
 
 func resourceUserExists(data *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(drone.Client)
 
-	login := data.Get("login").(string)
+	login := data.Id()
 
 	user, err := client.User(login)
 

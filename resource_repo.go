@@ -55,6 +55,10 @@ func resourceRepo() *schema.Resource {
 			},
 		},
 
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+
 		Create: resourceRepoCreate,
 		Read:   resourceRepoRead,
 		Update: resourceRepoUpdate,
@@ -90,7 +94,7 @@ func resourceRepoCreate(data *schema.ResourceData, meta interface{}) error {
 func resourceRepoRead(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	owner, repo, err := parseRepo(data.Get("repository").(string))
+	owner, repo, err := parseRepo(data.Id())
 
 	if err != nil {
 		return err
@@ -118,7 +122,7 @@ func resourceRepoUpdate(data *schema.ResourceData, meta interface{}) error {
 func resourceRepoDelete(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	owner, repo, err := parseRepo(data.Get("repository").(string))
+	owner, repo, err := parseRepo(data.Id())
 
 	if err != nil {
 		return err
@@ -130,7 +134,7 @@ func resourceRepoDelete(data *schema.ResourceData, meta interface{}) error {
 func resourceRepoExists(data *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(drone.Client)
 
-	owner, repo, err := parseRepo(data.Get("repository").(string))
+	owner, repo, err := parseRepo(data.Id())
 
 	if err != nil {
 		return false, err
@@ -194,6 +198,7 @@ func readRepo(data *schema.ResourceData, repository *drone.Repo, err error) erro
 		hooks = append(hooks, drone.EventTag)
 	}
 
+	data.Set("repository", fmt.Sprintf("%s/%s", repository.Owner, repository.Name))
 	data.Set("trusted", repository.IsTrusted)
 	data.Set("gated", repository.IsGated)
 	data.Set("timeout", repository.Timeout)

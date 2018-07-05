@@ -36,6 +36,10 @@ func resourceRegistry() *schema.Resource {
 			},
 		},
 
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+
 		Create: resourceRegistryCreate,
 		Read:   resourceRegistryRead,
 		Update: resourceRegistryUpdate,
@@ -63,9 +67,7 @@ func resourceRegistryCreate(data *schema.ResourceData, meta interface{}) error {
 func resourceRegistryRead(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	address := data.Get("address").(string)
-
-	owner, repo, err := parseRepo(data.Get("repository").(string))
+	owner, repo, address, err := parseId(data.Id(), "drone.io")
 
 	if err != nil {
 		return err
@@ -95,9 +97,7 @@ func resourceRegistryUpdate(data *schema.ResourceData, meta interface{}) error {
 func resourceRegistryDelete(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	address := data.Get("address").(string)
-
-	owner, repo, err := parseRepo(data.Get("repository").(string))
+	owner, repo, address, err := parseId(data.Id(), "drone.io")
 
 	if err != nil {
 		return err
@@ -109,9 +109,7 @@ func resourceRegistryDelete(data *schema.ResourceData, meta interface{}) error {
 func resourceRegistryExists(data *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(drone.Client)
 
-	address := data.Get("address").(string)
-
-	owner, repo, err := parseRepo(data.Get("repository").(string))
+	owner, repo, address, err := parseId(data.Id(), "drone.io")
 
 	if err != nil {
 		return false, err
@@ -141,6 +139,7 @@ func readRegistry(data *schema.ResourceData, owner, repo string, registry *drone
 
 	data.SetId(fmt.Sprintf("%s/%s/%s", owner, repo, registry.Address))
 
+	data.Set("repository", fmt.Sprintf("%s/%s", owner, repo))
 	data.Set("address", registry.Address)
 	data.Set("username", registry.Username)
 
