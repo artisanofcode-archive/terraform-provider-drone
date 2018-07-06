@@ -1,4 +1,4 @@
-package main
+package drone
 
 import (
 	"fmt"
