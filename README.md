@@ -3,6 +3,12 @@
 A [Terraform](https://www.terraform.io) provider for configuring the 
 [Drone](https://drone.io) continuous delivery platform.
 
+## Installing
+
+You can download the plugin from the [Releases](https://github.com/artisanofcode/terraform-provider-drone/releases/latest) page,
+for help installing please refer to the [Official Documentation](https://www.terraform.io/docs/plugins/basics.html#installing-a-plugin).
+
+
 ## Example
 
 ```terraform
@@ -31,7 +37,7 @@ resource "drone_secret" "master_password" {
 
 ```terraform
 provider "drone" {
-  server = "https:://ci.example.com/"
+  server = "https://ci.example.com/"
   token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZXh0Ijoib2N0b2NhdCIsInR5cGUiOiJ1c2VyIn0.Fg0eYxO9x2CfGIvIHDZKhQbCGbRAsSB_iRDJlDEW6vc"
 }
 ````
@@ -54,7 +60,7 @@ Manage a repository registry.
 ```terraform
 resource "drone_registry" "docker_io" {
   repository = "octocat/hello-world"
-  address    = "drone.io"
+  address    = "docker.io"
   username   = "octocat"
   password   = "correct horse battery staple"
 }
