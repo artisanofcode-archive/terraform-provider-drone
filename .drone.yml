@@ -1,0 +1,50 @@
+workspace:
+  base: /go
+  path: src/github.com/artisanofcode/terraform-provider-drone
+
+pipeline:
+  test:
+    image: golang:1.10
+    environment:
+      - TF_ACC=1
+      - DRONE_USER=terraform-provider-drone
+    secrets:
+      - drone_server
+      - drone_token
+    commands:
+      - go get
+      - go test -v ./...
+
+  build:
+    image: golang:1.10
+    commands:
+      - go get
+      - GOOS=linux   GOARCH=amd64 go build -o dist/linux_amd64/terraform-provider-drone_${DRONE_TAG}
+      - GOOS=linux   GOARCH=arm64 go build -o dist/linux_arm64/terraform-provider-drone_${DRONE_TAG}
+      - GOOS=linux   GOARCH=arm   go build -o dist/linux_arm/terraform-provider-drone_${DRONE_TAG}
+      - GOOS=windows GOARCH=amd64 go build -o dist/windows_amd64/terraform-provider-drone_${DRONE_TAG}
+      - GOOS=darwin  GOARCH=amd64 go build -o dist/darwin_amd64/terraform-provider-drone_${DRONE_TAG}
+
+      - tar -cvzf dist/terraform-provider-drone_linux_amd64.tar.gz   -C dist/linux_amd64   terraform-provider-drone_${DRONE_TAG}
+      - tar -cvzf dist/terraform-provider-drone_linux_arm64.tar.gz   -C dist/linux_arm64   terraform-provider-drone_${DRONE_TAG}
+      - tar -cvzf dist/terraform-provider-drone_linux_arm.tar.gz     -C dist/linux_arm     terraform-provider-drone_${DRONE_TAG}
+      - tar -cvzf dist/terraform-provider-drone_windows_amd64.tar.gz -C dist/windows_amd64 terraform-provider-drone_${DRONE_TAG}
+      - tar -cvzf dist/terraform-provider-drone_darwin_amd64.tar.gz  -C dist/darwin_amd64  terraform-provider-drone_${DRONE_TAG}
+    when:
+      event: tag
+
+  release:
+    image: plugins/github-release
+    files:
+      - dist/*.tar.gz
+    checksum: 
+      - md5
+      - sha1
+      - sha256
+      - sha512
+    secrets:
+      - source: github_token
+        target: github_release_api_key
+    when:
+      event: tag
+  
