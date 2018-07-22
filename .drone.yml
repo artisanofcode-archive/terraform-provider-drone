@@ -12,7 +12,8 @@ pipeline:
       - drone_server
       - drone_token
     commands:
-      - go get
+      - go get -u github.com/golang/dep/cmd/dep
+      - dep ensure 
       - go test -v ./...
 
   build:
@@ -47,4 +48,3 @@ pipeline:
         target: github_release_api_key
     when:
       event: tag
-  

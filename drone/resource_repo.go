@@ -70,6 +70,9 @@ func resourceRepo() *schema.Resource {
 func resourceRepoCreate(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
+	// Refresh repository list
+	client.RepoListOpts(true, true)
+
 	owner, repo, err := parseRepo(data.Get("repository").(string))
 
 	if err != nil {
