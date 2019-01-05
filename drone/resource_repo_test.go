@@ -95,7 +95,7 @@ func testRepoDestroy(state *terraform.State) error {
 			continue
 		}
 
-		owner, repo, err := parseRepo(resource.Primary.Attributes["repository"])
+		namespace, repo, err := parseRepo(resource.Primary.Attributes["repository"])
 
 		if err != nil {
 			return err
@@ -104,9 +104,9 @@ func testRepoDestroy(state *terraform.State) error {
 		repositories, err := client.RepoList()
 
 		for _, repository := range repositories {
-			if (repository.Owner == owner) && (repository.Name == repo) {
-				client.RepoDel(owner, repo)
-				return fmt.Errorf("Repo still exists: %s/%s", owner, repo)
+			if (repository.Namespace == namespace) && (repository.Name == repo) {
+				client.RepoDisable(namespace, repo)
+				return fmt.Errorf("Repo still exists: %s/%s", namespace, repo)
 			}
 		}
 	}

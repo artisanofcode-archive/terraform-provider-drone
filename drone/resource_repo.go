@@ -1,24 +1,33 @@
 package drone
 
 import (
-	"fmt"
 	"github.com/drone/drone-go/drone"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"regexp"
 )
 
-var validRepoHooks = []string{
-	drone.EventPull,
-	drone.EventPush,
-	drone.EventTag,
-	drone.EventDeploy,
-}
+const (
+	keyConfig     = "configuration"
+	keyProtected  = "protected"
+	keyRepository = "repository"
+	keyTimeout    = "timeout"
+	keyTrusted    = "trusted"
+	keyVisibility = "visibility"
+)
 
 func resourceRepo() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"repository": {
+			keyConfig: {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			keyProtected: {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			keyRepository: {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -27,31 +36,18 @@ func resourceRepo() *schema.Resource {
 					"Invalid repository (e.g. octocat/hello-world)",
 				),
 			},
-			"trusted": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"gated": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"timeout": {
+			keyTimeout: {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
-			"visibility": {
+			keyTrusted: {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			keyVisibility: {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "private",
-			},
-			"hooks": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				// ValidateFunc: validation.ValidateListUniqueStrings,
-				Elem: &schema.Schema{
-					Type:         schema.TypeString,
-					ValidateFunc: validation.StringInSlice(validRepoHooks, true),
-				},
 			},
 		},
 
@@ -70,140 +66,136 @@ func resourceRepo() *schema.Resource {
 func resourceRepoCreate(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	owner, repo, err := parseRepo(data.Get("repository").(string))
-
+	// sync and get the repo list
+	repos, err := client.RepoListSync()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.RepoPost(owner, repo)
-
+	// search the repo, don't make a second api call to client.Repo
+	repo, err := findRepo(data, repos)
 	if err != nil {
 		return err
 	}
 
-	repository, err := client.RepoPatch(owner, repo, createRepo(data))
-
+	if !repo.Active {
+		repo, err = client.RepoEnable(repo.Namespace, repo.Name)
+		if err != nil {
+			return err
+		}
+	}
+	repo, err = client.RepoUpdate(repo.Namespace, repo.Name, updateRepo(data, repo))
 	if err != nil {
 		return err
 	}
 
-	return readRepo(data, repository, err)
+	return readRepo(data, repo)
 }
 
 func resourceRepoRead(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	owner, repo, err := parseRepo(data.Id())
-
+	namespeace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return err
 	}
 
-	repository, err := client.Repo(owner, repo)
+	repository, err := client.Repo(namespeace, repo)
+	if err != nil {
+		return err
+	}
 
-	return readRepo(data, repository, err)
+	return readRepo(data, repository)
 }
 
 func resourceRepoUpdate(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
-
-	owner, repo, err := parseRepo(data.Get("repository").(string))
-
+	owner, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return err
 	}
 
-	repository, err := client.RepoPatch(owner, repo, createRepo(data))
+	repository, err := client.RepoUpdate(owner, repo, updateRepo(data, &drone.Repo{}))
+	if err != nil {
+		return err
+	}
 
-	return readRepo(data, repository, err)
+	return readRepo(data, repository)
 }
 
 func resourceRepoDelete(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	owner, repo, err := parseRepo(data.Id())
-
+	namespace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return err
 	}
 
-	return client.RepoDel(owner, repo)
+	return client.RepoDisable(namespace, repo)
 }
 
 func resourceRepoExists(data *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(drone.Client)
 
-	owner, repo, err := parseRepo(data.Id())
-
+	namespace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return false, err
 	}
 
-	repository, err := client.Repo(owner, repo)
-
-	exists := (repository.Owner == owner) && (repository.Name == repo) && (err == nil)
+	repository, err := client.Repo(namespace, repo)
+	// FIXME: check if repo is active?
+	exists := (repository.Namespace == namespace) && (repository.Name == repo) && (err == nil)
 
 	return exists, err
 }
 
-func createRepo(data *schema.ResourceData) (repository *drone.RepoPatch) {
-	hooks := data.Get("hooks").(*schema.Set)
+func updateRepo(data *schema.ResourceData, repository *drone.Repo) *drone.RepoPatch {
 
-	trusted := data.Get("trusted").(bool)
-	gated := data.Get("gated").(bool)
-	timeout := int64(data.Get("timeout").(int))
-	visibility := data.Get("visibility").(string)
-	pull := hooks.Contains(drone.EventPull)
-	push := hooks.Contains(drone.EventPush)
-	deploy := hooks.Contains(drone.EventDeploy)
-	tag := hooks.Contains(drone.EventTag)
-
-	repository = &drone.RepoPatch{
-		IsTrusted:   &trusted,
-		IsGated:     &gated,
-		Timeout:     &timeout,
-		Visibility:  &visibility,
-		AllowPull:   &pull,
-		AllowPush:   &push,
-		AllowDeploy: &deploy,
-		AllowTag:    &tag,
+	configuration, ok := data.GetOk(keyConfig)
+	if ok {
+		repository.Config = configuration.(string)
 	}
 
-	return
+	protected, ok := data.GetOk(keyProtected)
+	if ok {
+		repository.Protected = protected.(bool)
+	}
+
+	timeout, ok := data.GetOk(keyTimeout)
+	if ok {
+		repository.Timeout = timeout.(int64)
+	}
+
+	trusted, ok := data.GetOk(keyTrusted)
+	if ok {
+		repository.Trusted = trusted.(bool)
+	}
+
+	visibility, ok := data.GetOk(keyVisibility)
+	if ok {
+		repository.Visibility = visibility.(string)
+	}
+
+	patch := &drone.RepoPatch{
+		Config:     &repository.Config,
+		Protected:  &repository.Protected,
+		Timeout:    &repository.Timeout,
+		Visibility: &repository.Visibility,
+	}
+	return patch
 }
 
-func readRepo(data *schema.ResourceData, repository *drone.Repo, err error) error {
+func readRepo(data *schema.ResourceData, repository *drone.Repo) error {
+	err := setResourceData(nil, data, keyConfig, repository.Config)
+	err = setResourceData(err, data, keyProtected, repository.Protected)
+	err = setResourceData(err, data, keyTimeout, repository.Timeout)
+	err = setResourceData(err, data, keyTrusted, repository.Trusted)
+	return setResourceData(err, data, keyVisibility, repository.Visibility)
+}
+
+func setResourceData(err error, data *schema.ResourceData, key string, value interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	data.SetId(fmt.Sprintf("%s/%s", repository.Owner, repository.Name))
-
-	hooks := make([]string, 0)
-
-	if repository.AllowPull == true {
-		hooks = append(hooks, drone.EventPull)
-	}
-
-	if repository.AllowPush == true {
-		hooks = append(hooks, drone.EventPush)
-	}
-
-	if repository.AllowDeploy == true {
-		hooks = append(hooks, drone.EventDeploy)
-	}
-
-	if repository.AllowTag == true {
-		hooks = append(hooks, drone.EventTag)
-	}
-
-	data.Set("repository", fmt.Sprintf("%s/%s", repository.Owner, repository.Name))
-	data.Set("trusted", repository.IsTrusted)
-	data.Set("gated", repository.IsGated)
-	data.Set("timeout", repository.Timeout)
-	data.Set("visibility", repository.Visibility)
-	data.Set("hooks", hooks)
-
-	return nil
+	return data.Set(key, value)
 }
