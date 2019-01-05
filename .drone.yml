@@ -1,50 +1,483 @@
-workspace:
-  base: /go
-  path: src/github.com/artisanofcode/terraform-provider-drone
+---
+kind: pipeline
+name: Unit Test
 
-pipeline:
-  test:
-    image: golang:1.10
-    environment:
-      - TF_ACC=1
-      - DRONE_USER=terraform-provider-drone
-    secrets:
-      - drone_server
-      - drone_token
-    commands:
-      - go get
-      - go test -v ./...
+platform:
+  os: linux
+  arch: amd64
 
-  build:
-    image: golang:1.10
-    commands:
-      - go get
-      - CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build -o dist/linux_amd64/terraform-provider-drone_${DRONE_TAG}
-      - CGO_ENABLED=0 GOOS=linux   GOARCH=arm64 go build -o dist/linux_arm64/terraform-provider-drone_${DRONE_TAG}
-      - CGO_ENABLED=0 GOOS=linux   GOARCH=arm   go build -o dist/linux_arm/terraform-provider-drone_${DRONE_TAG}
-      - CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o dist/windows_amd64/terraform-provider-drone_${DRONE_TAG}
-      - CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build -o dist/darwin_amd64/terraform-provider-drone_${DRONE_TAG}
+steps:
+- name: Unit Test
+  image: golang:1.11-alpine
+  commands:
+  - apk add build-base
+  - go test -mod=vendor ./drone
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
 
-      - tar -cvzf dist/terraform-provider-drone_linux_amd64.tar.gz   -C dist/linux_amd64   terraform-provider-drone_${DRONE_TAG}
-      - tar -cvzf dist/terraform-provider-drone_linux_arm64.tar.gz   -C dist/linux_arm64   terraform-provider-drone_${DRONE_TAG}
-      - tar -cvzf dist/terraform-provider-drone_linux_arm.tar.gz     -C dist/linux_arm     terraform-provider-drone_${DRONE_TAG}
-      - tar -cvzf dist/terraform-provider-drone_windows_amd64.tar.gz -C dist/windows_amd64 terraform-provider-drone_${DRONE_TAG}
-      - tar -cvzf dist/terraform-provider-drone_darwin_amd64.tar.gz  -C dist/darwin_amd64  terraform-provider-drone_${DRONE_TAG}
-    when:
-      event: tag
+---
+kind: pipeline
+name: Integration Test 0.10.6
 
-  release:
-    image: plugins/github-release
-    files:
-      - dist/*.tar.gz
-    checksum: 
-      - md5
-      - sha1
-      - sha256
-      - sha512
-    secrets:
-      - source: github_token
-        target: github_release_api_key
-    when:
-      event: tag
-  
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: Setup Services
+  image: alpine
+  commands:
+  - apk add --update curl
+  - until nc -z gitea 3000; do sleep 5; done
+  - sleep 5
+  - until nc -z gitea 3000; do sleep 5; done
+  - "until curl -sSf -u test:test -X POST -H \"Content-Type: application/json\" -d '{\"auto_init\":true,\"name\":\"test\",\"readme\":\"Default\"}' http://gitea:3000/api/v1/user/repos; do sleep 5; done"
+  - sleep 5
+  - "until curl -sSf -X POST -d 'username=test&password=test' http://drone/login; do sleep 5; done"
+
+- name: Build Drone Provider
+  image: golang:1.11-alpine
+  commands:
+  - apk add build-base
+  - go build -mod=vendor
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Repo Create
+  image: hashicorp/terraform:0.10.6
+  commands:
+  - apk add --update curl jq
+  - terraform version
+  - cp terraform-provider-drone ci/terraform.d/plugins/linux_amd64/terraform-provider-drone_v0.0.0
+  - cd ci
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -fL http://drone/api/repos/test/test | jq '.active|contains(true)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+services:
+- name: gitea
+  image: gitea/gitea:latest
+  commands:
+  - "s6-svscan /etc/s6 &"
+  - apk add sed
+  - until nc -z localhost 3000; do sleep 5; done
+  - until stat /data/gitea/conf/app.ini; do sleep 5; done
+  - "sed -i -e 's/INSTALL_LOCK\\\\s*=\\\\s*false/INSTALL_LOCK = true/' /data/gitea/conf/app.ini"
+  - "sed -i -e 's/\\\\[database\\\\]/[database]\\\\nLOG_SQL = false/' /data/gitea/conf/app.ini"
+  - until killall gitea; do sleep 5; done
+  - until nc -z localhost 3000; do sleep 5; done
+  - "until gitea admin create-user --name test --password test --email test@test.local --admin --config /data/gitea/conf/app.ini; do sleep 5; done"
+  - wait
+
+- name: drone
+  image: drone/drone:1.0.0-rc.3
+  environment:
+    DRONE_GITEA_SERVER: http://gitea:3000
+    DRONE_GIT_PASSWORD: test
+    DRONE_GIT_USER: test
+    DRONE_RUNNER_CAPACITY: 1
+    DRONE_SERVER_HOST: localhost
+    DRONE_SERVER_PROTO: http
+    DRONE_TLS_AUTOCERT: false
+    DRONE_USER_CREATE: "username:test,machine:false,admin:true,token:55f24eb3d61ef6ac5e83d550178638dc"
+
+depends_on:
+- Unit Test
+
+---
+kind: pipeline
+name: Integration Test 0.10.7
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: Setup Services
+  image: alpine
+  commands:
+  - apk add --update curl
+  - until nc -z gitea 3000; do sleep 5; done
+  - sleep 5
+  - until nc -z gitea 3000; do sleep 5; done
+  - "until curl -sSf -u test:test -X POST -H \"Content-Type: application/json\" -d '{\"auto_init\":true,\"name\":\"test\",\"readme\":\"Default\"}' http://gitea:3000/api/v1/user/repos; do sleep 5; done"
+  - sleep 5
+  - "until curl -sSf -X POST -d 'username=test&password=test' http://drone/login; do sleep 5; done"
+
+- name: Build Drone Provider
+  image: golang:1.11-alpine
+  commands:
+  - apk add build-base
+  - go build -mod=vendor
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Repo Create
+  image: hashicorp/terraform:0.10.7
+  commands:
+  - apk add --update curl jq
+  - terraform version
+  - cp terraform-provider-drone ci/terraform.d/plugins/linux_amd64/terraform-provider-drone_v0.0.0
+  - cd ci
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -fL http://drone/api/repos/test/test | jq '.active|contains(true)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+services:
+- name: gitea
+  image: gitea/gitea:latest
+  commands:
+  - "s6-svscan /etc/s6 &"
+  - apk add sed
+  - until nc -z localhost 3000; do sleep 5; done
+  - until stat /data/gitea/conf/app.ini; do sleep 5; done
+  - "sed -i -e 's/INSTALL_LOCK\\\\s*=\\\\s*false/INSTALL_LOCK = true/' /data/gitea/conf/app.ini"
+  - "sed -i -e 's/\\\\[database\\\\]/[database]\\\\nLOG_SQL = false/' /data/gitea/conf/app.ini"
+  - until killall gitea; do sleep 5; done
+  - until nc -z localhost 3000; do sleep 5; done
+  - "until gitea admin create-user --name test --password test --email test@test.local --admin --config /data/gitea/conf/app.ini; do sleep 5; done"
+  - wait
+
+- name: drone
+  image: drone/drone:1.0.0-rc.3
+  environment:
+    DRONE_GITEA_SERVER: http://gitea:3000
+    DRONE_GIT_PASSWORD: test
+    DRONE_GIT_USER: test
+    DRONE_RUNNER_CAPACITY: 1
+    DRONE_SERVER_HOST: localhost
+    DRONE_SERVER_PROTO: http
+    DRONE_TLS_AUTOCERT: false
+    DRONE_USER_CREATE: "username:test,machine:false,admin:true,token:55f24eb3d61ef6ac5e83d550178638dc"
+
+depends_on:
+- Unit Test
+
+---
+kind: pipeline
+name: Integration Test 0.10.8
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: Setup Services
+  image: alpine
+  commands:
+  - apk add --update curl
+  - until nc -z gitea 3000; do sleep 5; done
+  - sleep 5
+  - until nc -z gitea 3000; do sleep 5; done
+  - "until curl -sSf -u test:test -X POST -H \"Content-Type: application/json\" -d '{\"auto_init\":true,\"name\":\"test\",\"readme\":\"Default\"}' http://gitea:3000/api/v1/user/repos; do sleep 5; done"
+  - sleep 5
+  - "until curl -sSf -X POST -d 'username=test&password=test' http://drone/login; do sleep 5; done"
+
+- name: Build Drone Provider
+  image: golang:1.11-alpine
+  commands:
+  - apk add build-base
+  - go build -mod=vendor
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Repo Create
+  image: hashicorp/terraform:0.10.8
+  commands:
+  - apk add --update curl jq
+  - terraform version
+  - cp terraform-provider-drone ci/terraform.d/plugins/linux_amd64/terraform-provider-drone_v0.0.0
+  - cd ci
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -fL http://drone/api/repos/test/test | jq '.active|contains(true)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+services:
+- name: gitea
+  image: gitea/gitea:latest
+  commands:
+  - "s6-svscan /etc/s6 &"
+  - apk add sed
+  - until nc -z localhost 3000; do sleep 5; done
+  - until stat /data/gitea/conf/app.ini; do sleep 5; done
+  - "sed -i -e 's/INSTALL_LOCK\\\\s*=\\\\s*false/INSTALL_LOCK = true/' /data/gitea/conf/app.ini"
+  - "sed -i -e 's/\\\\[database\\\\]/[database]\\\\nLOG_SQL = false/' /data/gitea/conf/app.ini"
+  - until killall gitea; do sleep 5; done
+  - until nc -z localhost 3000; do sleep 5; done
+  - "until gitea admin create-user --name test --password test --email test@test.local --admin --config /data/gitea/conf/app.ini; do sleep 5; done"
+  - wait
+
+- name: drone
+  image: drone/drone:1.0.0-rc.3
+  environment:
+    DRONE_GITEA_SERVER: http://gitea:3000
+    DRONE_GIT_PASSWORD: test
+    DRONE_GIT_USER: test
+    DRONE_RUNNER_CAPACITY: 1
+    DRONE_SERVER_HOST: localhost
+    DRONE_SERVER_PROTO: http
+    DRONE_TLS_AUTOCERT: false
+    DRONE_USER_CREATE: "username:test,machine:false,admin:true,token:55f24eb3d61ef6ac5e83d550178638dc"
+
+depends_on:
+- Unit Test
+
+---
+kind: pipeline
+name: Integration Test 0.11.9
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: Setup Services
+  image: alpine
+  commands:
+  - apk add --update curl
+  - until nc -z gitea 3000; do sleep 5; done
+  - sleep 5
+  - until nc -z gitea 3000; do sleep 5; done
+  - "until curl -sSf -u test:test -X POST -H \"Content-Type: application/json\" -d '{\"auto_init\":true,\"name\":\"test\",\"readme\":\"Default\"}' http://gitea:3000/api/v1/user/repos; do sleep 5; done"
+  - sleep 5
+  - "until curl -sSf -X POST -d 'username=test&password=test' http://drone/login; do sleep 5; done"
+
+- name: Build Drone Provider
+  image: golang:1.11-alpine
+  commands:
+  - apk add build-base
+  - go build -mod=vendor
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Repo Create
+  image: hashicorp/terraform:0.11.9
+  commands:
+  - apk add --update curl jq
+  - terraform version
+  - cp terraform-provider-drone ci/terraform.d/plugins/linux_amd64/terraform-provider-drone_v0.0.0
+  - cd ci
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -fL http://drone/api/repos/test/test | jq '.active|contains(true)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+services:
+- name: gitea
+  image: gitea/gitea:latest
+  commands:
+  - "s6-svscan /etc/s6 &"
+  - apk add sed
+  - until nc -z localhost 3000; do sleep 5; done
+  - until stat /data/gitea/conf/app.ini; do sleep 5; done
+  - "sed -i -e 's/INSTALL_LOCK\\\\s*=\\\\s*false/INSTALL_LOCK = true/' /data/gitea/conf/app.ini"
+  - "sed -i -e 's/\\\\[database\\\\]/[database]\\\\nLOG_SQL = false/' /data/gitea/conf/app.ini"
+  - until killall gitea; do sleep 5; done
+  - until nc -z localhost 3000; do sleep 5; done
+  - "until gitea admin create-user --name test --password test --email test@test.local --admin --config /data/gitea/conf/app.ini; do sleep 5; done"
+  - wait
+
+- name: drone
+  image: drone/drone:1.0.0-rc.3
+  environment:
+    DRONE_GITEA_SERVER: http://gitea:3000
+    DRONE_GIT_PASSWORD: test
+    DRONE_GIT_USER: test
+    DRONE_RUNNER_CAPACITY: 1
+    DRONE_SERVER_HOST: localhost
+    DRONE_SERVER_PROTO: http
+    DRONE_TLS_AUTOCERT: false
+    DRONE_USER_CREATE: "username:test,machine:false,admin:true,token:55f24eb3d61ef6ac5e83d550178638dc"
+
+depends_on:
+- Unit Test
+
+---
+kind: pipeline
+name: Integration Test 0.11.10
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: Setup Services
+  image: alpine
+  commands:
+  - apk add --update curl
+  - until nc -z gitea 3000; do sleep 5; done
+  - sleep 5
+  - until nc -z gitea 3000; do sleep 5; done
+  - "until curl -sSf -u test:test -X POST -H \"Content-Type: application/json\" -d '{\"auto_init\":true,\"name\":\"test\",\"readme\":\"Default\"}' http://gitea:3000/api/v1/user/repos; do sleep 5; done"
+  - sleep 5
+  - "until curl -sSf -X POST -d 'username=test&password=test' http://drone/login; do sleep 5; done"
+
+- name: Build Drone Provider
+  image: golang:1.11-alpine
+  commands:
+  - apk add build-base
+  - go build -mod=vendor
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Repo Create
+  image: hashicorp/terraform:0.11.10
+  commands:
+  - apk add --update curl jq
+  - terraform version
+  - cp terraform-provider-drone ci/terraform.d/plugins/linux_amd64/terraform-provider-drone_v0.0.0
+  - cd ci
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -fL http://drone/api/repos/test/test | jq '.active|contains(true)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+services:
+- name: gitea
+  image: gitea/gitea:latest
+  commands:
+  - "s6-svscan /etc/s6 &"
+  - apk add sed
+  - until nc -z localhost 3000; do sleep 5; done
+  - until stat /data/gitea/conf/app.ini; do sleep 5; done
+  - "sed -i -e 's/INSTALL_LOCK\\\\s*=\\\\s*false/INSTALL_LOCK = true/' /data/gitea/conf/app.ini"
+  - "sed -i -e 's/\\\\[database\\\\]/[database]\\\\nLOG_SQL = false/' /data/gitea/conf/app.ini"
+  - until killall gitea; do sleep 5; done
+  - until nc -z localhost 3000; do sleep 5; done
+  - "until gitea admin create-user --name test --password test --email test@test.local --admin --config /data/gitea/conf/app.ini; do sleep 5; done"
+  - wait
+
+- name: drone
+  image: drone/drone:1.0.0-rc.3
+  environment:
+    DRONE_GITEA_SERVER: http://gitea:3000
+    DRONE_GIT_PASSWORD: test
+    DRONE_GIT_USER: test
+    DRONE_RUNNER_CAPACITY: 1
+    DRONE_SERVER_HOST: localhost
+    DRONE_SERVER_PROTO: http
+    DRONE_TLS_AUTOCERT: false
+    DRONE_USER_CREATE: "username:test,machine:false,admin:true,token:55f24eb3d61ef6ac5e83d550178638dc"
+
+depends_on:
+- Unit Test
+
+---
+kind: pipeline
+name: Integration Test 0.11.11
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: Setup Services
+  image: alpine
+  commands:
+  - apk add --update curl
+  - until nc -z gitea 3000; do sleep 5; done
+  - sleep 5
+  - until nc -z gitea 3000; do sleep 5; done
+  - "until curl -sSf -u test:test -X POST -H \"Content-Type: application/json\" -d '{\"auto_init\":true,\"name\":\"test\",\"readme\":\"Default\"}' http://gitea:3000/api/v1/user/repos; do sleep 5; done"
+  - sleep 5
+  - "until curl -sSf -X POST -d 'username=test&password=test' http://drone/login; do sleep 5; done"
+
+- name: Build Drone Provider
+  image: golang:1.11-alpine
+  commands:
+  - apk add build-base
+  - go build -mod=vendor
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Repo Create
+  image: hashicorp/terraform:0.11.11
+  commands:
+  - apk add --update curl jq
+  - terraform version
+  - cp terraform-provider-drone ci/terraform.d/plugins/linux_amd64/terraform-provider-drone_v0.0.0
+  - cd ci
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -fL http://drone/api/repos/test/test | jq '.active|contains(true)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+services:
+- name: gitea
+  image: gitea/gitea:latest
+  commands:
+  - "s6-svscan /etc/s6 &"
+  - apk add sed
+  - until nc -z localhost 3000; do sleep 5; done
+  - until stat /data/gitea/conf/app.ini; do sleep 5; done
+  - "sed -i -e 's/INSTALL_LOCK\\\\s*=\\\\s*false/INSTALL_LOCK = true/' /data/gitea/conf/app.ini"
+  - "sed -i -e 's/\\\\[database\\\\]/[database]\\\\nLOG_SQL = false/' /data/gitea/conf/app.ini"
+  - until killall gitea; do sleep 5; done
+  - until nc -z localhost 3000; do sleep 5; done
+  - "until gitea admin create-user --name test --password test --email test@test.local --admin --config /data/gitea/conf/app.ini; do sleep 5; done"
+  - wait
+
+- name: drone
+  image: drone/drone:1.0.0-rc.3
+  environment:
+    DRONE_GITEA_SERVER: http://gitea:3000
+    DRONE_GIT_PASSWORD: test
+    DRONE_GIT_USER: test
+    DRONE_RUNNER_CAPACITY: 1
+    DRONE_SERVER_HOST: localhost
+    DRONE_SERVER_PROTO: http
+    DRONE_TLS_AUTOCERT: false
+    DRONE_USER_CREATE: "username:test,machine:false,admin:true,token:55f24eb3d61ef6ac5e83d550178638dc"
+
+depends_on:
+- Unit Test
+
+...
