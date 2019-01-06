@@ -1,10 +1,11 @@
 package drone
 
 import (
+	"regexp"
+
 	"github.com/drone/drone-go/drone"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
-	"regexp"
 )
 
 const (
