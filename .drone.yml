@@ -78,6 +78,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp update/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'"
@@ -93,6 +94,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp delete/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
@@ -198,6 +200,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp update/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'"
@@ -213,6 +216,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp delete/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
@@ -318,6 +322,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp update/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'"
@@ -333,6 +338,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp delete/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
@@ -438,6 +444,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp update/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'"
@@ -453,6 +460,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp delete/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
@@ -558,6 +566,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp update/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'"
@@ -573,6 +582,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp delete/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
@@ -678,6 +688,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp update/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'"
@@ -693,6 +704,7 @@ steps:
   - apk add --update curl jq
   - cd ci
   - cp delete/repo.tf ./
+  - terraform init
   - terraform apply -auto-approve
   - "curl -sSf http://drone/api/repos/test/test | jq ."
   - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"

@@ -1,7 +1,7 @@
 local DRONE_CLI_VERSION = '1.0.4';
 local DRONE_TOKEN = '55f24eb3d61ef6ac5e83d550178638dc';
 
-local terraform_versions = [
+local terraformVersions = [
   '0.10.6',
   '0.10.7',
   '0.10.8',
@@ -66,49 +66,18 @@ local stepSetupServices() = {
   ],
 };
 
-local stepIntegrationRepoCreate(tf_version) = {
-  name: 'Test Repo Create',
-  image: 'hashicorp/terraform:' + tf_version,
+local stepIntegration(component, name, tfVersion, showCmd, testCmd) = {
+  name: std.format('Test %s %s', [component, name]),
+  image: 'hashicorp/terraform:' + tfVersion,
   environment: buildENV(),
   commands: [
     'apk add --update curl jq',
     'cd ci',
-    'cp create/repo.tf ./',
+    std.format('cp %s/%s.tf ./', [std.asciiLower(name), std.asciiLower(component)]),
     'terraform init',
     'terraform apply -auto-approve',
-    // test if the repo was activated
-    'curl -sSf http://drone/api/repos/test/test | jq .',
-    "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(true)'",
-  ],
-};
-
-local stepIntegrationRepoUpdate(tf_version) = {
-  name: 'Test Repo Update',
-  image: 'hashicorp/terraform:' + tf_version,
-  environment: buildENV(),
-  commands: [
-    'apk add --update curl jq',
-    'cd ci',
-    'cp update/repo.tf ./',
-    'terraform apply -auto-approve',
-    // test if the repo was activated
-    'curl -sSf http://drone/api/repos/test/test | jq .',
-    "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'",
-  ],
-};
-
-local stepIntegrationRepoDelete(tf_version) = {
-  name: 'Test Repo Delete',
-  image: 'hashicorp/terraform:' + tf_version,
-  environment: buildENV(),
-  commands: [
-    'apk add --update curl jq',
-    'cd ci',
-    'cp delete/repo.tf ./',
-    'terraform apply -auto-approve',
-    // test if the repo was activated
-    'curl -sSf http://drone/api/repos/test/test | jq .',
-    "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'",
+    showCmd,
+    testCmd,
   ],
 };
 
@@ -159,16 +128,20 @@ local serviceDrone() = {
   },
 };
 
-local pipelineIntegration(tf_version) = {
+local pipelineIntegration(tfVersion) = {
+  local showRepoCmd = 'curl -sSf http://drone/api/repos/test/test | jq .',
+  local testRepoCreateCmd = "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(true)'",
+  local testRepoUpdateCmd = "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'",
+  local testRepoDeleteCmd = "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'",
   kind: 'pipeline',
-  name: 'Integration Test ' + tf_version,
+  name: 'Integration Test ' + tfVersion,
   steps: [
     stepSetupServices(),
     stepBuild(),
     stepIntegrationCleanup('Before'),
-    stepIntegrationRepoCreate(tf_version),
-    stepIntegrationRepoUpdate(tf_version),
-    stepIntegrationRepoDelete(tf_version),
+    stepIntegration('Repo', 'Create', tfVersion, showRepoCmd, testRepoCreateCmd),
+    stepIntegration('Repo', 'Update', tfVersion, showRepoCmd, testRepoUpdateCmd),
+    stepIntegration('Repo', 'Delete', tfVersion, showRepoCmd, testRepoDeleteCmd),
     stepIntegrationCleanup('After'),
   ],
   services: [
@@ -197,4 +170,4 @@ local pipelineIntegration(tf_version) = {
 
 [
   pipelineTest(),
-] + [pipelineIntegration(tfv) for tfv in terraform_versions]
+] + [pipelineIntegration(tfv) for tfv in terraformVersions]
