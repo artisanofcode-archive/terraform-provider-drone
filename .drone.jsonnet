@@ -97,13 +97,38 @@ local stepIntegrationRepoUpdate(tf_version) = {
   ],
 };
 
+local stepIntegrationRepoDelete(tf_version) = {
+  name: 'Test Repo Delete',
+  image: 'hashicorp/terraform:' + tf_version,
+  environment: buildENV(),
+  commands: [
+    'apk add --update curl jq',
+    'cd ci',
+    'cp delete/repo.tf ./',
+    'terraform apply -auto-approve',
+    // test if the repo was activated
+    'curl -sSf http://drone/api/repos/test/test | jq .',
+    "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'",
+  ],
+};
+
+// this step is here to make local testing easier
+local stepIntegrationCleanup(name) = {
+  name: 'Cleanup ' + name,
+  image: 'alpine',
+  commands: [
+    'cd ci',
+    'rm -rf repo.tf .terraform terraform.tfstate*',
+  ],
+};
+
 local serviceGitea() = {
   name: 'gitea',
   image: 'gitea/gitea:latest',
   commands: [
     's6-svscan /etc/s6 &',
     'apk add sed',
-    // wait for gitea to generate the inital config
+    // wait for gitea to generate the initial config
     'until nc -z localhost 3000; do sleep 5; done',
     'until stat /data/gitea/conf/app.ini; do sleep 5; done',
     // set gitea as installed
@@ -140,8 +165,11 @@ local pipelineIntegration(tf_version) = {
   steps: [
     stepSetupServices(),
     stepBuild(),
+    stepIntegrationCleanup('Before'),
     stepIntegrationRepoCreate(tf_version),
     stepIntegrationRepoUpdate(tf_version),
+    stepIntegrationRepoDelete(tf_version),
+    stepIntegrationCleanup('After'),
   ],
   services: [
     serviceGitea(),

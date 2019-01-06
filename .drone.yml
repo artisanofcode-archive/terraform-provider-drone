@@ -50,6 +50,12 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Cleanup Before
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
+
 - name: Test Repo Create
   image: hashicorp/terraform:0.10.6
   commands:
@@ -80,6 +86,27 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+
+- name: Test Repo Delete
+  image: hashicorp/terraform:0.10.6
+  commands:
+  - apk add --update curl jq
+  - cd ci
+  - cp delete/repo.tf ./
+  - terraform apply -auto-approve
+  - "curl -sSf http://drone/api/repos/test/test | jq ."
+  - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Cleanup After
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -143,6 +170,12 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Cleanup Before
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
+
 - name: Test Repo Create
   image: hashicorp/terraform:0.10.7
   commands:
@@ -173,6 +206,27 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+
+- name: Test Repo Delete
+  image: hashicorp/terraform:0.10.7
+  commands:
+  - apk add --update curl jq
+  - cd ci
+  - cp delete/repo.tf ./
+  - terraform apply -auto-approve
+  - "curl -sSf http://drone/api/repos/test/test | jq ."
+  - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Cleanup After
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -236,6 +290,12 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Cleanup Before
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
+
 - name: Test Repo Create
   image: hashicorp/terraform:0.10.8
   commands:
@@ -266,6 +326,27 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+
+- name: Test Repo Delete
+  image: hashicorp/terraform:0.10.8
+  commands:
+  - apk add --update curl jq
+  - cd ci
+  - cp delete/repo.tf ./
+  - terraform apply -auto-approve
+  - "curl -sSf http://drone/api/repos/test/test | jq ."
+  - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Cleanup After
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -329,6 +410,12 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Cleanup Before
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
+
 - name: Test Repo Create
   image: hashicorp/terraform:0.11.9
   commands:
@@ -359,6 +446,27 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+
+- name: Test Repo Delete
+  image: hashicorp/terraform:0.11.9
+  commands:
+  - apk add --update curl jq
+  - cd ci
+  - cp delete/repo.tf ./
+  - terraform apply -auto-approve
+  - "curl -sSf http://drone/api/repos/test/test | jq ."
+  - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Cleanup After
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -422,6 +530,12 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Cleanup Before
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
+
 - name: Test Repo Create
   image: hashicorp/terraform:0.11.10
   commands:
@@ -452,6 +566,27 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+
+- name: Test Repo Delete
+  image: hashicorp/terraform:0.11.10
+  commands:
+  - apk add --update curl jq
+  - cd ci
+  - cp delete/repo.tf ./
+  - terraform apply -auto-approve
+  - "curl -sSf http://drone/api/repos/test/test | jq ."
+  - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Cleanup After
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -515,6 +650,12 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Cleanup Before
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
+
 - name: Test Repo Create
   image: hashicorp/terraform:0.11.11
   commands:
@@ -545,6 +686,27 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+
+- name: Test Repo Delete
+  image: hashicorp/terraform:0.11.11
+  commands:
+  - apk add --update curl jq
+  - cd ci
+  - cp delete/repo.tf ./
+  - terraform apply -auto-approve
+  - "curl -sSf http://drone/api/repos/test/test | jq ."
+  - "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Cleanup After
+  image: alpine
+  commands:
+  - cd ci
+  - "rm -rf repo.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
