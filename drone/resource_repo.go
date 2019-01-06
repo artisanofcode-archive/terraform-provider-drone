@@ -21,10 +21,12 @@ func resourceRepo() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			keyConfig: {
 				Type:     schema.TypeString,
+				Default:  ".drone.yml",
 				Optional: true,
 			},
 			keyProtected: {
 				Type:     schema.TypeBool,
+				Default:  false,
 				Optional: true,
 			},
 			keyRepository: {
@@ -38,16 +40,18 @@ func resourceRepo() *schema.Resource {
 			},
 			keyTimeout: {
 				Type:     schema.TypeInt,
+				Default:  60,
 				Optional: true,
 			},
 			keyTrusted: {
 				Type:     schema.TypeBool,
+				Default:  false,
 				Optional: true,
 			},
 			keyVisibility: {
 				Type:     schema.TypeString,
-				Optional: true,
 				Default:  "private",
+				Optional: true,
 			},
 		},
 
