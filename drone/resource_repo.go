@@ -183,7 +183,9 @@ func updateRepo(data *schema.ResourceData, repository *drone.Repo) *drone.RepoPa
 }
 
 func readRepo(data *schema.ResourceData, repository *drone.Repo) error {
-	err := setResourceData(nil, data, keyConfig, repository.Config)
+	data.SetId(repository.Slug)
+	err := setResourceData(nil, data, keyRepository, repository.Slug)
+	err = setResourceData(err, data, keyConfig, repository.Config)
 	err = setResourceData(err, data, keyProtected, repository.Protected)
 	err = setResourceData(err, data, keyTimeout, repository.Timeout)
 	err = setResourceData(err, data, keyTrusted, repository.Trusted)
