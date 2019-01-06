@@ -89,6 +89,7 @@ func resourceRepoCreate(data *schema.ResourceData, meta interface{}) error {
 			return err
 		}
 	}
+
 	repo, err = client.RepoUpdate(repo.Namespace, repo.Name, updateRepo(data, repo))
 	if err != nil {
 		return err
@@ -156,37 +157,28 @@ func resourceRepoExists(data *schema.ResourceData, meta interface{}) (bool, erro
 
 func updateRepo(data *schema.ResourceData, repository *drone.Repo) *drone.RepoPatch {
 
-	configuration, ok := data.GetOk(keyConfig)
-	if ok {
-		repository.Config = configuration.(string)
-	}
+	patch := &drone.RepoPatch{}
 
-	protected, ok := data.GetOk(keyProtected)
-	if ok {
-		repository.Protected = protected.(bool)
-	}
+	configuration := data.Get(keyConfig)
+	repository.Config = configuration.(string)
+	patch.Config = &repository.Config
 
-	timeout, ok := data.GetOk(keyTimeout)
-	if ok {
-		repository.Timeout = timeout.(int64)
-	}
+	protected := data.Get(keyProtected)
+	repository.Protected = protected.(bool)
+	patch.Protected = &repository.Protected
 
-	trusted, ok := data.GetOk(keyTrusted)
-	if ok {
-		repository.Trusted = trusted.(bool)
-	}
+	timeout := data.Get(keyTimeout)
+	repository.Timeout = int64(timeout.(int))
+	patch.Timeout = &repository.Timeout
 
-	visibility, ok := data.GetOk(keyVisibility)
-	if ok {
-		repository.Visibility = visibility.(string)
-	}
+	trusted := data.Get(keyTrusted)
+	repository.Trusted = trusted.(bool)
+	patch.Trusted = &repository.Trusted
 
-	patch := &drone.RepoPatch{
-		Config:     &repository.Config,
-		Protected:  &repository.Protected,
-		Timeout:    &repository.Timeout,
-		Visibility: &repository.Visibility,
-	}
+	visibility := data.Get(keyVisibility)
+	repository.Visibility = visibility.(string)
+	patch.Visibility = &repository.Visibility
+
 	return patch
 }
 
