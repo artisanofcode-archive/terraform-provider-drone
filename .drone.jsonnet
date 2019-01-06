@@ -44,6 +44,7 @@ local stepBuild() = {
   commands: [
     'apk add build-base',
     'go build -mod=vendor',
+    'cp terraform-provider-drone ci/terraform.d/plugins/linux_amd64/terraform-provider-drone_v0.0.0',
   ],
 };
 
@@ -58,28 +59,42 @@ local stepSetupServices() = {
     'sleep 5',
     'until nc -z gitea 3000; do sleep 5; done',
     // create a test repo
-    'until curl -sSf -u test:test -X POST -H "Content-Type: application/json" -d \'{"auto_init":true,"name":"test","readme":"Default"}\' http://gitea:3000/api/v1/user/repos; do sleep 5; done',
+    'until curl -f -u test:test -X POST -H "Content-Type: application/json" -d \'{"auto_init":true,"name":"test","readme":"Default"}\' http://gitea:3000/api/v1/user/repos; do sleep 5; done',
     // login to drone, drone sets up the connection gitea
     'sleep 5',
-    "until curl -sSf -X POST -d 'username=test&password=test' http://drone/login; do sleep 5; done",
+    "until curl -f -X POST -d 'username=test&password=test' http://drone/login; do sleep 5; done",
   ],
 };
 
-local stepIntegration(tf_version) = {
+local stepIntegrationRepoCreate(tf_version) = {
   name: 'Test Repo Create',
   image: 'hashicorp/terraform:' + tf_version,
   environment: buildENV(),
   commands: [
     'apk add --update curl jq',
-    'terraform version',
-    'cp terraform-provider-drone ci/terraform.d/plugins/linux_amd64/terraform-provider-drone_v0.0.0',
     'cd ci',
+    'cp create/repo.tf ./',
     'terraform init',
     'terraform apply -auto-approve',
     // test if the repo was activated
-    "curl -fL http://drone/api/repos/test/test | jq '.active|contains(true)'",
+    'curl -sSf http://drone/api/repos/test/test | jq .',
+    "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(true)'",
   ],
+};
 
+local stepIntegrationRepoUpdate(tf_version) = {
+  name: 'Test Repo Update',
+  image: 'hashicorp/terraform:' + tf_version,
+  environment: buildENV(),
+  commands: [
+    'apk add --update curl jq',
+    'cd ci',
+    'cp update/repo.tf ./',
+    'terraform apply -auto-approve',
+    // test if the repo was activated
+    'curl -sSf http://drone/api/repos/test/test | jq .',
+    "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'",
+  ],
 };
 
 local serviceGitea() = {
@@ -125,7 +140,8 @@ local pipelineIntegration(tf_version) = {
   steps: [
     stepSetupServices(),
     stepBuild(),
-    stepIntegration(tf_version),
+    stepIntegrationRepoCreate(tf_version),
+    stepIntegrationRepoUpdate(tf_version),
   ],
   services: [
     serviceGitea(),
