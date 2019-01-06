@@ -116,12 +116,17 @@ func resourceRepoRead(data *schema.ResourceData, meta interface{}) error {
 
 func resourceRepoUpdate(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
-	owner, repo, err := parseRepo(data.Get(keyRepository).(string))
+	namespeace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return err
 	}
 
-	repository, err := client.RepoUpdate(owner, repo, updateRepo(data, &drone.Repo{}))
+	repository, err := client.Repo(namespeace, repo)
+	if err != nil {
+		return err
+	}
+
+	repository, err = client.RepoUpdate(namespeace, repo, updateRepo(data, repository))
 	if err != nil {
 		return err
 	}
