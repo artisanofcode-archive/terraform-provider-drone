@@ -5,6 +5,7 @@ import (
 	"github.com/drone/drone-go/drone"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
+	"log"
 	"regexp"
 )
 
@@ -66,10 +67,11 @@ func resourceSecretCreate(data *schema.ResourceData, meta interface{}) error {
 func resourceSecretRead(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	namespace, repo, name, err := parseID(data.Id())
+	namespace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return err
 	}
+	name := data.Get(keyName).(string)
 
 	secret, err := client.Secret(namespace, repo, name)
 	if err != nil {
@@ -97,10 +99,12 @@ func resourceSecretUpdate(data *schema.ResourceData, meta interface{}) error {
 func resourceSecretDelete(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	namespace, repo, name, err := parseID(data.Id())
+	namespace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return err
 	}
+	log.Print("[ERROR] foobar")
+	name := data.Get(keyName).(string)
 
 	return client.SecretDelete(namespace, repo, name)
 }
@@ -108,10 +112,11 @@ func resourceSecretDelete(data *schema.ResourceData, meta interface{}) error {
 func resourceSecretExists(data *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(drone.Client)
 
-	namespace, repo, name, err := parseID(data.Id())
+	namespace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return false, err
 	}
+	name := data.Get(keyName).(string)
 
 	secret, err := client.Secret(namespace, repo, name)
 	exists := (secret.Name == name) && (err == nil)

@@ -13,6 +13,7 @@ local terraformVersions = [
 local buildENV() = {
   CGO_ENABLE: '0',
   GO111MODULE: 'on',
+  TF_LOG: 'DEBUG',
   DRONE_TOKEN: DRONE_TOKEN,
   DRONE_SERVER: 'http://drone',
 };
@@ -144,6 +145,7 @@ local pipelineIntegration(tfVersion) = {
   local testSecretDeleteCmd = |||
     curl -H "Authorization: Bearer $DRONE_TOKEN" -sSf http://drone/api/repos/test/test/secrets | jq '.|select(length == 0)'
   |||,
+
   kind: 'pipeline',
   name: 'Integration Test ' + tfVersion,
   steps: [

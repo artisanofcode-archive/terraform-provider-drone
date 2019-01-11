@@ -17,6 +17,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 ---
 kind: pipeline
@@ -49,6 +50,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup Before
   image: alpine
@@ -73,6 +75,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Update
   image: hashicorp/terraform:0.10.6
@@ -91,6 +94,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Create
   image: hashicorp/terraform:0.10.6
@@ -109,6 +113,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Delete
   image: hashicorp/terraform:0.10.6
@@ -127,6 +132,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Delete
   image: hashicorp/terraform:0.10.6
@@ -145,6 +151,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup After
   image: alpine
@@ -213,6 +220,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup Before
   image: alpine
@@ -237,6 +245,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Update
   image: hashicorp/terraform:0.10.7
@@ -255,6 +264,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Create
   image: hashicorp/terraform:0.10.7
@@ -273,6 +283,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Delete
   image: hashicorp/terraform:0.10.7
@@ -291,6 +302,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Delete
   image: hashicorp/terraform:0.10.7
@@ -309,6 +321,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup After
   image: alpine
@@ -377,6 +390,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup Before
   image: alpine
@@ -401,6 +415,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Update
   image: hashicorp/terraform:0.10.8
@@ -419,6 +434,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Create
   image: hashicorp/terraform:0.10.8
@@ -437,6 +453,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Delete
   image: hashicorp/terraform:0.10.8
@@ -455,6 +472,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Delete
   image: hashicorp/terraform:0.10.8
@@ -473,6 +491,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup After
   image: alpine
@@ -541,6 +560,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup Before
   image: alpine
@@ -565,6 +585,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Update
   image: hashicorp/terraform:0.11.9
@@ -583,6 +604,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Create
   image: hashicorp/terraform:0.11.9
@@ -601,6 +623,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Delete
   image: hashicorp/terraform:0.11.9
@@ -619,6 +642,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Delete
   image: hashicorp/terraform:0.11.9
@@ -637,6 +661,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup After
   image: alpine
@@ -705,6 +730,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup Before
   image: alpine
@@ -729,6 +755,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Update
   image: hashicorp/terraform:0.11.10
@@ -747,6 +774,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Create
   image: hashicorp/terraform:0.11.10
@@ -765,6 +793,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Delete
   image: hashicorp/terraform:0.11.10
@@ -783,6 +812,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Delete
   image: hashicorp/terraform:0.11.10
@@ -801,6 +831,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup After
   image: alpine
@@ -869,6 +900,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup Before
   image: alpine
@@ -893,6 +925,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Update
   image: hashicorp/terraform:0.11.11
@@ -911,6 +944,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Create
   image: hashicorp/terraform:0.11.11
@@ -929,6 +963,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Secret Delete
   image: hashicorp/terraform:0.11.11
@@ -947,6 +982,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Test Repo Delete
   image: hashicorp/terraform:0.11.11
@@ -965,6 +1001,7 @@ steps:
     DRONE_SERVER: http://drone
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
+    TF_LOG: DEBUG
 
 - name: Cleanup After
   image: alpine
