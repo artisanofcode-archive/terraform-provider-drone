@@ -54,13 +54,15 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 - name: Test Repo Create
   image: hashicorp/terraform:0.10.6
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp create/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -75,8 +77,10 @@ steps:
 - name: Test Repo Update
   image: hashicorp/terraform:0.10.6
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp update/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -88,11 +92,49 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Test Secret Create
+  image: hashicorp/terraform:0.10.6
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp create/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets/fancy_pants | jq '.name|contains(\"fancy_pants\")'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Secret Delete
+  image: hashicorp/terraform:0.10.6
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp delete/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq '.|select(length == 0)'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
 - name: Test Repo Delete
   image: hashicorp/terraform:0.10.6
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp delete/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -108,7 +150,7 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -176,13 +218,15 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 - name: Test Repo Create
   image: hashicorp/terraform:0.10.7
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp create/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -197,8 +241,10 @@ steps:
 - name: Test Repo Update
   image: hashicorp/terraform:0.10.7
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp update/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -210,11 +256,49 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Test Secret Create
+  image: hashicorp/terraform:0.10.7
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp create/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets/fancy_pants | jq '.name|contains(\"fancy_pants\")'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Secret Delete
+  image: hashicorp/terraform:0.10.7
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp delete/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq '.|select(length == 0)'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
 - name: Test Repo Delete
   image: hashicorp/terraform:0.10.7
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp delete/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -230,7 +314,7 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -298,13 +382,15 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 - name: Test Repo Create
   image: hashicorp/terraform:0.10.8
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp create/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -319,8 +405,10 @@ steps:
 - name: Test Repo Update
   image: hashicorp/terraform:0.10.8
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp update/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -332,11 +420,49 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Test Secret Create
+  image: hashicorp/terraform:0.10.8
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp create/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets/fancy_pants | jq '.name|contains(\"fancy_pants\")'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Secret Delete
+  image: hashicorp/terraform:0.10.8
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp delete/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq '.|select(length == 0)'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
 - name: Test Repo Delete
   image: hashicorp/terraform:0.10.8
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp delete/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -352,7 +478,7 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -420,13 +546,15 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 - name: Test Repo Create
   image: hashicorp/terraform:0.11.9
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp create/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -441,8 +569,10 @@ steps:
 - name: Test Repo Update
   image: hashicorp/terraform:0.11.9
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp update/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -454,11 +584,49 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Test Secret Create
+  image: hashicorp/terraform:0.11.9
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp create/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets/fancy_pants | jq '.name|contains(\"fancy_pants\")'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Secret Delete
+  image: hashicorp/terraform:0.11.9
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp delete/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq '.|select(length == 0)'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
 - name: Test Repo Delete
   image: hashicorp/terraform:0.11.9
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp delete/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -474,7 +642,7 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -542,13 +710,15 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 - name: Test Repo Create
   image: hashicorp/terraform:0.11.10
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp create/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -563,8 +733,10 @@ steps:
 - name: Test Repo Update
   image: hashicorp/terraform:0.11.10
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp update/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -576,11 +748,49 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Test Secret Create
+  image: hashicorp/terraform:0.11.10
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp create/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets/fancy_pants | jq '.name|contains(\"fancy_pants\")'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Secret Delete
+  image: hashicorp/terraform:0.11.10
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp delete/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq '.|select(length == 0)'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
 - name: Test Repo Delete
   image: hashicorp/terraform:0.11.10
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp delete/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -596,7 +806,7 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea
@@ -664,13 +874,15 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 - name: Test Repo Create
   image: hashicorp/terraform:0.11.11
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp create/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -685,8 +897,10 @@ steps:
 - name: Test Repo Update
   image: hashicorp/terraform:0.11.11
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp update/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -698,11 +912,49 @@ steps:
     DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
     GO111MODULE: on
 
+- name: Test Secret Create
+  image: hashicorp/terraform:0.11.11
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp create/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets/fancy_pants | jq '.name|contains(\"fancy_pants\")'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
+- name: Test Secret Delete
+  image: hashicorp/terraform:0.11.11
+  commands:
+  - set -eo pipefail
+  - apk add --update curl jq
+  - cd ci
+  - cp provider/provider.tf ./
+  - cp delete/secret.tf ./
+  - terraform init
+  - terraform apply -auto-approve
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq ."
+  - "curl -H \"Authorization: Bearer $DRONE_TOKEN\" -sSf http://drone/api/repos/test/test/secrets | jq '.|select(length == 0)'\n"
+  environment:
+    CGO_ENABLE: 0
+    DRONE_SERVER: http://drone
+    DRONE_TOKEN: 55f24eb3d61ef6ac5e83d550178638dc
+    GO111MODULE: on
+
 - name: Test Repo Delete
   image: hashicorp/terraform:0.11.11
   commands:
+  - set -eo pipefail
   - apk add --update curl jq
   - cd ci
+  - cp provider/provider.tf ./
   - cp delete/repo.tf ./
   - terraform init
   - terraform apply -auto-approve
@@ -718,7 +970,7 @@ steps:
   image: alpine
   commands:
   - cd ci
-  - "rm -rf repo.tf .terraform terraform.tfstate*"
+  - "rm -rf *.tf .terraform terraform.tfstate*"
 
 services:
 - name: gitea

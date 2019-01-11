@@ -8,6 +8,18 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+const (
+	keyConfig     = "configuration"
+	keyProtected  = "protected"
+	keyRepository = "repository"
+	keyTimeout    = "timeout"
+	keyTrusted    = "trusted"
+	keyVisibility = "visibility"
+	keyName       = "name"
+	keyValue      = "value"
+	keyAllowPR    = "allow_pull_requests"
+)
+
 func findRepo(data *schema.ResourceData, repos []*drone.Repo) (*drone.Repo, error) {
 	slug := data.Get("repository").(string)
 	for _, repo := range repos {
@@ -30,21 +42,11 @@ func parseRepo(str string) (user, repo string, err error) {
 	return
 }
 
-func parseId(str, example string) (user, repo, id string, err error) {
-	parts := strings.Split(str, "/")
-
+func parseID(id string) (string, string, string, error) {
+	parts := strings.SplitN(id, "/", 3)
 	if len(parts) < 3 {
-		err = fmt.Errorf(
-			"Error: Invalid identity (e.g. octocat/hello-world/%s).",
-			example,
-		)
-		return
+		return "", "", "", fmt.Errorf("Error: Invalid identity (e.g. octocat/hello-world/fancy_pants)")
 	}
 
-	user = parts[0]
-	repo = parts[1]
-
-	id = strings.Join(parts[2:], "/")
-
-	return
+	return parts[0], parts[1], parts[2], nil
 }

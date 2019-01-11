@@ -71,8 +71,10 @@ local stepIntegration(component, name, tfVersion, showCmd, testCmd) = {
   image: 'hashicorp/terraform:' + tfVersion,
   environment: buildENV(),
   commands: [
+    'set -eo pipefail',
     'apk add --update curl jq',
     'cd ci',
+    'cp provider/provider.tf ./',
     std.format('cp %s/%s.tf ./', [std.asciiLower(name), std.asciiLower(component)]),
     'terraform init',
     'terraform apply -auto-approve',
@@ -87,7 +89,7 @@ local stepIntegrationCleanup(name) = {
   image: 'alpine',
   commands: [
     'cd ci',
-    'rm -rf repo.tf .terraform terraform.tfstate*',
+    'rm -rf *.tf .terraform terraform.tfstate*',
   ],
 };
 
@@ -130,9 +132,18 @@ local serviceDrone() = {
 
 local pipelineIntegration(tfVersion) = {
   local showRepoCmd = 'curl -sSf http://drone/api/repos/test/test | jq .',
+  local showSecretCmd = 'curl -H "Authorization: Bearer $DRONE_TOKEN" -sSf http://drone/api/repos/test/test/secrets | jq .',
+
   local testRepoCreateCmd = "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(true)'",
   local testRepoUpdateCmd = "curl -sSf http://drone/api/repos/test/test | jq '.trusted|contains(true)'",
   local testRepoDeleteCmd = "curl -sSf http://drone/api/repos/test/test | jq '.active|contains(false)'",
+
+  local testSecretCreateCmd = |||
+    curl -H "Authorization: Bearer $DRONE_TOKEN" -sSf http://drone/api/repos/test/test/secrets/fancy_pants | jq '.name|contains("fancy_pants")'
+  |||,
+  local testSecretDeleteCmd = |||
+    curl -H "Authorization: Bearer $DRONE_TOKEN" -sSf http://drone/api/repos/test/test/secrets | jq '.|select(length == 0)'
+  |||,
   kind: 'pipeline',
   name: 'Integration Test ' + tfVersion,
   steps: [
@@ -141,6 +152,8 @@ local pipelineIntegration(tfVersion) = {
     stepIntegrationCleanup('Before'),
     stepIntegration('Repo', 'Create', tfVersion, showRepoCmd, testRepoCreateCmd),
     stepIntegration('Repo', 'Update', tfVersion, showRepoCmd, testRepoUpdateCmd),
+    stepIntegration('Secret', 'Create', tfVersion, showSecretCmd, testSecretCreateCmd),
+    stepIntegration('Secret', 'Delete', tfVersion, showSecretCmd, testSecretDeleteCmd),
     stepIntegration('Repo', 'Delete', tfVersion, showRepoCmd, testRepoDeleteCmd),
     stepIntegrationCleanup('After'),
   ],
