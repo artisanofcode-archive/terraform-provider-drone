@@ -1,20 +1,12 @@
 package drone
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/drone/drone-go/drone"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
-)
-
-const (
-	keyConfig     = "configuration"
-	keyProtected  = "protected"
-	keyRepository = "repository"
-	keyTimeout    = "timeout"
-	keyTrusted    = "trusted"
-	keyVisibility = "visibility"
 )
 
 func resourceRepo() *schema.Resource {
@@ -27,7 +19,7 @@ func resourceRepo() *schema.Resource {
 			},
 			keyProtected: {
 				Type:     schema.TypeBool,
-				Default:  false,
+				Computed: true,
 				Optional: true,
 			},
 			keyRepository: {
@@ -41,17 +33,17 @@ func resourceRepo() *schema.Resource {
 			},
 			keyTimeout: {
 				Type:     schema.TypeInt,
-				Default:  60,
 				Optional: true,
+				Default:  60,
 			},
 			keyTrusted: {
 				Type:     schema.TypeBool,
-				Default:  false,
+				Computed: true,
 				Optional: true,
 			},
 			keyVisibility: {
 				Type:     schema.TypeString,
-				Default:  "private",
+				Computed: true,
 				Optional: true,
 			},
 		},
@@ -164,31 +156,31 @@ func updateRepo(data *schema.ResourceData, repository *drone.Repo) *drone.RepoPa
 
 	patch := &drone.RepoPatch{}
 
-	configuration := data.Get(keyConfig)
-	repository.Config = configuration.(string)
-	patch.Config = &repository.Config
+	configuration := data.Get(keyConfig).(string)
+	repository.Config = configuration
+	patch.Config = &configuration
 
-	protected := data.Get(keyProtected)
-	repository.Protected = protected.(bool)
-	patch.Protected = &repository.Protected
+	protected := data.Get(keyProtected).(bool)
+	repository.Protected = protected
+	patch.Protected = &protected
 
-	timeout := data.Get(keyTimeout)
-	repository.Timeout = int64(timeout.(int))
-	patch.Timeout = &repository.Timeout
+	timeout := int64(data.Get(keyTimeout).(int))
+	repository.Timeout = timeout
+	patch.Timeout = &timeout
 
-	trusted := data.Get(keyTrusted)
-	repository.Trusted = trusted.(bool)
-	patch.Trusted = &repository.Trusted
+	trusted := data.Get(keyTrusted).(bool)
+	repository.Trusted = trusted
+	patch.Trusted = &trusted
 
-	visibility := data.Get(keyVisibility)
-	repository.Visibility = visibility.(string)
-	patch.Visibility = &repository.Visibility
+	visibility := data.Get(keyVisibility).(string)
+	repository.Visibility = visibility
+	patch.Visibility = &visibility
 
 	return patch
 }
 
 func readRepo(data *schema.ResourceData, repository *drone.Repo) error {
-	data.SetId(repository.Slug)
+	data.SetId(fmt.Sprintf("repo/%s", repository.Slug))
 	err := setResourceData(nil, data, keyRepository, repository.Slug)
 	err = setResourceData(err, data, keyConfig, repository.Config)
 	err = setResourceData(err, data, keyProtected, repository.Protected)
