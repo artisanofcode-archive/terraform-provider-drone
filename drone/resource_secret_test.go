@@ -1,123 +1,48 @@
 package drone
 
 import (
-	"fmt"
 	"github.com/drone/drone-go/drone"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/stretchr/testify/suite"
+
 	"testing"
 )
 
-func testSecretConfigBasic(user, repo, name, value string) string {
-	return fmt.Sprintf(`
-    resource "drone_repo" "repo" {
-      repository = "%s/%s"
-    }
-    
-    resource "drone_secret" "secret" {
-      repository = "${drone_repo.repo.repository}"
-      name       = "%s"
-      value      = "%s"
-      events     = ["push", "pull_request", "tag", "deployment"]
-    }
-    `,
-		user,
-		repo,
-		name,
-		value,
-	)
+type SecretTestSuite struct {
+	suite.Suite
 }
 
-func TestSecret(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testProviders,
-		CheckDestroy: testSecretDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testSecretConfigBasic(
-					testDroneUser,
-					"repository-1",
-					"password",
-					"1234567890",
-				),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"drone_secret.secret",
-						"repository",
-						fmt.Sprintf("%s/repository-1", testDroneUser),
-					),
-					resource.TestCheckResourceAttr(
-						"drone_secret.secret",
-						"name",
-						"password",
-					),
-					resource.TestCheckResourceAttr(
-						"drone_secret.secret",
-						"value",
-						"1234567890",
-					),
-					resource.TestCheckResourceAttr(
-						"drone_secret.secret",
-						"images.#",
-						"0",
-					),
-					resource.TestCheckResourceAttr(
-						"drone_secret.secret",
-						"events.#",
-						"4",
-					),
-					resource.TestCheckResourceAttr(
-						"drone_secret.secret",
-						"events.1329302135",
-						"deployment",
-					),
-					resource.TestCheckResourceAttr(
-						"drone_secret.secret",
-						"events.1396138718",
-						"pull_request",
-					),
-					resource.TestCheckResourceAttr(
-						"drone_secret.secret",
-						"events.398155140",
-						"tag",
-					),
-					resource.TestCheckResourceAttr(
-						"drone_secret.secret",
-						"events.696883710",
-						"push",
-					),
-				),
-			},
-		},
-	})
+func (s *SecretTestSuite) TestSecretCreate() {
+	data := resourceSecret().Data(&terraform.InstanceState{})
+	data.Set(keyName, "test")
+	data.Set(keyValue, "password")
+	data.Set(keyAllowPR, true)
+
+	secret := createSecret(data)
+
+	s.Equal("test", secret.Name)
+	s.Equal("password", secret.Data)
+	s.Equal(true, secret.PullRequest)
 }
 
-func testSecretDestroy(state *terraform.State) error {
-	client := testProvider.Meta().(drone.Client)
-
-	for _, resource := range state.RootModule().Resources {
-		if resource.Type != "drone_secret" {
-			continue
-		}
-
-		owner, repo, err := parseRepo(resource.Primary.Attributes["repository"])
-
-		if err != nil {
-			return err
-		}
-
-		err = client.SecretDelete(owner, repo, resource.Primary.Attributes["name"])
-
-		if err == nil {
-			return fmt.Errorf(
-				"Secret still exists: %s/%s:%s",
-				owner,
-				repo,
-				resource.Primary.Attributes["name"],
-			)
-		}
+func (s *SecretTestSuite) TestReadSecret() {
+	data := resourceSecret().Data(&terraform.InstanceState{})
+	secret := &drone.Secret{
+		Name:        "test",
+		Data:        "password",
+		PullRequest: false,
 	}
 
-	return nil
+	if err := readSecret(data, "test", "repo", secret); err != nil {
+		s.Fail("readSecret returned an error", err)
+	}
+
+	s.Equal("secret/test/repo/test", data.Id())
+	s.Equal("test", data.Get(keyName).(string))
+	s.Equal("password", data.Get(keyValue).(string))
+	s.Equal(false, data.Get(keyAllowPR).(bool))
+}
+
+func TestSecretSuite(t *testing.T) {
+	suite.Run(t, &SecretTestSuite{})
 }

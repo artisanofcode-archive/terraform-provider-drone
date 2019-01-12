@@ -24,10 +24,9 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"drone_registry": resourceRegistry(),
-			"drone_repo":     resourceRepo(),
-			"drone_secret":   resourceSecret(),
-			"drone_user":     resourceUser(),
+			"drone_repo":   resourceRepo(),
+			"drone_secret": resourceSecret(),
+			// "drone_user":   resourceUser(),
 		},
 		ConfigureFunc: providerConfigureFunc,
 	}

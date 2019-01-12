@@ -5,27 +5,14 @@ import (
 	"github.com/drone/drone-go/drone"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
+	"log"
 	"regexp"
-)
-
-var (
-	defaultSecretEvents = []string{
-		drone.EventPush,
-		drone.EventTag,
-		drone.EventDeploy,
-	}
-	validSecretEvents = []string{
-		drone.EventPull,
-		drone.EventPush,
-		drone.EventTag,
-		drone.EventDeploy,
-	}
 )
 
 func resourceSecret() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"repository": {
+			keyRepository: {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -34,32 +21,19 @@ func resourceSecret() *schema.Resource {
 					"Invalid repository (e.g. octocat/hello-world)",
 				),
 			},
-			"name": {
+			keyName: {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"value": {
+			keyValue: {
 				Type:      schema.TypeString,
 				Required:  true,
 				Sensitive: true,
 			},
-			"images": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				// ValidateFunc: validation.ValidateListUniqueStrings,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-			"events": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				// ValidateFunc: validation.ValidateListUniqueStrings,
-				Elem: &schema.Schema{
-					Type:         schema.TypeString,
-					ValidateFunc: validation.StringInSlice(validSecretEvents, true),
-				},
+			keyAllowPR: {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 		},
 
@@ -78,115 +52,91 @@ func resourceSecret() *schema.Resource {
 func resourceSecretCreate(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	owner, repo, err := parseRepo(data.Get("repository").(string))
-
+	namespace, repo, err := parseRepo(data.Get("repository").(string))
+	if err != nil {
+		return err
+	}
+	secret, err := client.SecretCreate(namespace, repo, createSecret(data))
 	if err != nil {
 		return err
 	}
 
-	secret, err := client.SecretCreate(owner, repo, createSecret(data))
-
-	data.Set("value", data.Get("value").(string))
-
-	return readSecret(data, owner, repo, secret, err)
+	return readSecret(data, namespace, repo, secret)
 }
 
 func resourceSecretRead(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	owner, repo, name, err := parseId(data.Id(), "secret_password")
+	namespace, repo, err := parseRepo(data.Get(keyRepository).(string))
+	if err != nil {
+		return err
+	}
+	name := data.Get(keyName).(string)
 
+	secret, err := client.Secret(namespace, repo, name)
 	if err != nil {
 		return err
 	}
 
-	secret, err := client.Secret(owner, repo, name)
-
-	return readSecret(data, owner, repo, secret, err)
+	return readSecret(data, namespace, repo, secret)
 }
 
 func resourceSecretUpdate(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	owner, repo, err := parseRepo(data.Get("repository").(string))
-
+	namespace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return err
 	}
 
-	secret, err := client.SecretUpdate(owner, repo, createSecret(data))
-
-	data.Set("value", data.Get("value").(string))
-
-	return readSecret(data, owner, repo, secret, err)
+	secret, err := client.SecretUpdate(namespace, repo, createSecret(data))
+	if err != nil {
+		return err
+	}
+	return readSecret(data, namespace, repo, secret)
 }
 
 func resourceSecretDelete(data *schema.ResourceData, meta interface{}) error {
 	client := meta.(drone.Client)
 
-	owner, repo, name, err := parseId(data.Id(), "secret_password")
-
+	namespace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return err
 	}
+	log.Print("[ERROR] foobar")
+	name := data.Get(keyName).(string)
 
-	return client.SecretDelete(owner, repo, name)
+	return client.SecretDelete(namespace, repo, name)
 }
 
 func resourceSecretExists(data *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(drone.Client)
 
-	owner, repo, name, err := parseId(data.Id(), "secret_password")
-
+	namespace, repo, err := parseRepo(data.Get(keyRepository).(string))
 	if err != nil {
 		return false, err
 	}
+	name := data.Get(keyName).(string)
 
-	secret, err := client.Secret(owner, repo, name)
-
+	secret, err := client.Secret(namespace, repo, name)
 	exists := (secret.Name == name) && (err == nil)
 
 	return exists, err
 }
 
-func createSecret(data *schema.ResourceData) (secret *drone.Secret) {
-	events := []string{}
-	eventSet := data.Get("events").(*schema.Set)
-	for _, v := range eventSet.List() {
-		events = append(events, v.(string))
+func createSecret(data *schema.ResourceData) *drone.Secret {
+	return &drone.Secret{
+		Name:        data.Get(keyName).(string),
+		Data:        data.Get(keyValue).(string),
+		PullRequest: data.Get(keyAllowPR).(bool),
 	}
-
-	images := []string{}
-	imageSet := data.Get("images").(*schema.Set)
-	for _, v := range imageSet.List() {
-		images = append(images, v.(string))
-	}
-
-	secret = &drone.Secret{
-		Name:   data.Get("name").(string),
-		Value:  data.Get("value").(string),
-		Images: images,
-		Events: events,
-	}
-
-	if len(secret.Events) == 0 {
-		secret.Events = defaultSecretEvents
-	}
-
-	return
 }
 
-func readSecret(data *schema.ResourceData, owner, repo string, secret *drone.Secret, err error) error {
-	if err != nil {
-		return err
-	}
-
-	data.SetId(fmt.Sprintf("%s/%s/%s", owner, repo, secret.Name))
-
-	data.Set("repository", fmt.Sprintf("%s/%s", owner, repo))
-	data.Set("name", secret.Name)
-	data.Set("images", secret.Images)
-	data.Set("events", secret.Events)
-
-	return nil
+func readSecret(data *schema.ResourceData, namespace, repo string, secret *drone.Secret) error {
+	slug := fmt.Sprintf("%s/%s", namespace, repo)
+	data.SetId(fmt.Sprintf("secret/%s/%s", slug, secret.Name))
+	err := setResourceData(nil, data, keyRepository, slug)
+	err = setResourceData(err, data, keyName, secret.Name)
+	err = setResourceData(err, data, keyValue, secret.Data)
+	return setResourceData(err, data, keyAllowPR, secret.PullRequest)
 }
